@@ -77,6 +77,7 @@ def clear_company(con, domain: str) -> None:
     """Used by --refresh: forget the decision and pages, keep paid API caches (Hunter, Lusha)."""
     for table in ("companies", "answers", "pages"):
         con.execute(f"DELETE FROM {table} WHERE domain=?", (domain,))
+    con.execute("DELETE FROM api_cache WHERE key=?", (f"links:{domain}",))
     con.commit()
 
 

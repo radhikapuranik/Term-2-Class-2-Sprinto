@@ -140,7 +140,7 @@ parameters:
 # Page types the agent can fetch, with link words and fallback paths.
 pages:
   home: {paths: ["/"], link_words: []}
-  about: {paths: ["/about", "/about-us", "/company"], link_words: [about, company, team]}
+  about: {paths: ["/about", "/about-us", "/company"], link_words: [about, company, our-story, who-we-are]}
   security: {paths: ["/security", "/trust", "/compliance"], link_words: [security, trust, compliance]}
   careers: {paths: ["/careers", "/jobs"], link_words: [careers, jobs, join, hiring]}
   customers: {paths: ["/customers", "/case-studies"], link_words: [customers, case stud, clients, stories]}
