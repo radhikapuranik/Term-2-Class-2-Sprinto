@@ -35,6 +35,7 @@ class ParamState:
     result: dict | None = None      # final qualifies / rejects
     neutral: dict | None = None     # best non-qualifying answer so far
     errors: list = field(default_factory=list)
+    certs_seen: list = field(default_factory=list)  # audit row: certs found on any page so far
     gave_up: str | None = None
 
 
@@ -163,6 +164,9 @@ class Run:
                 if ans is None:
                     continue
                 ans.source_kind = kind
+                if p.kind == "audit":  # a cert seen on one page still counts when the next page is checked
+                    s.certs_seen += [c for c in ans.items if c not in s.certs_seen]
+                    ans.items = list(s.certs_seen)
                 outcome, reason = evaluate(p, ans)
                 rec = {"outcome": outcome, "reason": reason, "answer": ans.model_dump(), "quote": ans.evidence_quote,
                        "url": page["url"], "attempts": s.attempts, "error": None}

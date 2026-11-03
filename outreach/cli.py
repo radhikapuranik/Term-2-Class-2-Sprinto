@@ -7,6 +7,8 @@ from pathlib import Path
 from . import db
 from .agent import qualify_company
 from .config import ROOT, env
+from .contact import load_rules
+from .writer import draft_for
 from .fetcher import Fetcher
 from .icp import load_icp
 from .llm import Gemini, LLMDown
@@ -22,10 +24,27 @@ def cmd_run(args) -> None:
     llm, fetcher = Gemini(con), Fetcher(con, icp.keywords)
     if not llm.model:
         sys.exit("GEMINI_MODEL is empty. Run: uv run outreach models")
+    rules = load_rules()
     for d in read_domains(args.domains)[: args.limit]:
         c = qualify_company(d, icp, con, llm, fetcher, refresh=args.refresh)
         tag = "cache" if c["cached"] else f"{c['elapsed_s']}s"
         print(f"{c['decision']:<13} {c['domain']:<28} ({tag}) {c['stop_reason'] or ''}")
+        if db.effective_decision(con, c["domain"]) == "GO":
+            dr = draft_for(con, c["domain"], llm, rules)
+            print(f"{'':<13} draft: {dr['status']} - {dr['notes']}")
+
+
+def cmd_draft(args) -> None:
+    """Steps 4-6 for one company a human has approved (or to redo a draft)."""
+    con = db.connect()
+    d = args.domain
+    if db.effective_decision(con, d) != "GO":
+        db.set_override(con, d, "GO", args.reason)
+        print(f"Recorded human decision: {d} -> GO ({args.reason})")
+    dr = draft_for(con, d, Gemini(con), load_rules(), redraft=args.redraft)
+    print(f"draft: {dr['status']} - {dr['notes']}")
+    if dr["body"]:
+        print(f"\nSubject: {dr['subject']}\n\n{dr['body']}")
 
 
 def set_env_line(name: str, value: str) -> None:
@@ -106,6 +125,11 @@ def main() -> None:
     r.add_argument("--refresh", action="store_true", help="ignore cached decisions and re-research")
     r.add_argument("--limit", type=int, default=None)
     r.set_defaults(fn=cmd_run)
+    dr = sub.add_parser("draft", help="find contact, pain points and email for one company (marks it GO)")
+    dr.add_argument("domain")
+    dr.add_argument("--reason", default="human reviewer approved from CLI")
+    dr.add_argument("--redraft", action="store_true")
+    dr.set_defaults(fn=cmd_draft)
     sub.add_parser("models", help="pick the newest Gemini Flash model").set_defaults(fn=cmd_models)
     sub.add_parser("check-keys", help="test each key with a harmless call").set_defaults(fn=cmd_check_keys)
     args = ap.parse_args()

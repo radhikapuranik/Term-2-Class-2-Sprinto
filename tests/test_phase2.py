@@ -174,3 +174,17 @@ def test_link_discovery_skips_login_and_prefers_real_sections():
     assert links["security"] in ("https://ledgerly.io/trust", "https://ledgerly.io/security")
     assert links["careers"] == "https://ledgerly.io/careers"
     assert not any("login" in u for u in links.values())
+
+
+def test_certs_found_on_one_page_are_kept_for_the_next(env):
+    con, icp, fetcher = env
+    answers = GOOD | {"audit_prep": ("Security at Ledgerly", E(value="none", items=["SOC 2"], quote="Security at Ledgerly"))}
+
+    class TwoPages(FakeGemini):
+        def generate_json(self, prompt, schema, domain, purpose):
+            if purpose == "extract:audit_prep" and "Security at Ledgerly" not in prompt:
+                return E(value="none", items=["ISO 27001"], quote="Close your books three days faster")
+            return super().generate_json(prompt, schema, domain, purpose)
+
+    c = qualify_company("ledgerly.io", icp, con, TwoPages(con, answers), fetcher)
+    assert c["decision"] == "NO-GO" and "SOC 2, ISO 27001" in c["stop_reason"]

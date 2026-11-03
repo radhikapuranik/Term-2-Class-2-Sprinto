@@ -1,0 +1,28 @@
+# Rules for steps 4-6 (contact, pain points, email). Data, not code.
+
+# Who to email, best first. The first tier with a match wins; ties go to Hunter's highest confidence.
+contact_priority:
+  - tier: Head of security or compliance / CISO
+    pattern: '\b(ciso|chief information security|chief security|head of (information )?security|security (lead|manager|director)|(vp|director|head)\W+(of\W+)?(security|compliance|grc|risk)|compliance (lead|manager|officer)|\bgrc\b)'
+  - tier: CTO
+    pattern: '\b(cto|chief technology officer|chief technical officer)\b'
+  - tier: VP engineering
+    pattern: '\b(vp|vice president|svp|head|director)\W+(of\W+)?engineering\b'
+  - tier: Founder or CEO
+    pattern: '\b(founder|co-founder|ceo|chief executive)\b'
+
+email:
+  max_words: 120
+  max_subject_words: 7      # "under 8 words"
+  retries: 2                # then HUMAN REVIEW
+  sender_signature: "Radhika, Sprinto"
+
+# The only things an email may say about Sprinto. Copied from https://sprinto.com/ (read 2026-11-03).
+sprinto_facts:
+  - Sprinto is an autonomous trust platform for compliance, risk and GRC.
+  - Sprinto monitors controls around the clock and refreshes evidence automatically (continuous compliance).
+  - Sprinto covers SOC 2, ISO 27001, HIPAA, GDPR, PCI DSS and 200+ frameworks.
+  - Sprinto has AI-powered audit prep and evidence collection with gap analysis.
+  - Sprinto offers a Trust Center and automates security questionnaire responses.
+  - Sprinto has 300+ integrations across cloud, identity, HR and SaaS.
+  - Sprinto is trusted by 4,000+ companies from Series A to enterprise.

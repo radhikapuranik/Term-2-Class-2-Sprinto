@@ -50,6 +50,22 @@ CREATE TABLE IF NOT EXISTS llm_calls (
     domain TEXT, purpose TEXT, model TEXT,
     tokens_in INTEGER, tokens_out INTEGER, ok INTEGER, error TEXT, ts REAL
 );
+CREATE TABLE IF NOT EXISTS drafts (
+    domain TEXT PRIMARY KEY,
+    contact_json TEXT,     -- the one point of contact (name, title, work email, confidence, why)
+    pains_json TEXT,       -- two pain points, each with its evidence
+    subject TEXT, body TEXT, hook TEXT,
+    status TEXT,           -- draft | human_review | sent | rejected
+    notes TEXT,            -- validation problems or why it needs a human
+    final_subject TEXT, final_body TEXT,
+    edit_ratio REAL,       -- 0 = sent as drafted, 1 = fully rewritten
+    review_action TEXT,    -- approved | edited | rejected
+    reject_reason TEXT,
+    created_at REAL, sent_at REAL
+);
+CREATE TABLE IF NOT EXISTS overrides (
+    domain TEXT PRIMARY KEY, decision TEXT, reason TEXT, ts REAL  -- a human's call on a HUMAN REVIEW company
+);
 CREATE TABLE IF NOT EXISTS loop_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     domain TEXT, event TEXT, ts REAL
@@ -121,6 +137,42 @@ def cached_api(con, key: str):
 def save_api(con, key: str, response) -> None:
     con.execute("INSERT OR REPLACE INTO api_cache VALUES (?,?,?)", (key, json.dumps(response), time.time()))
     con.commit()
+
+
+# --- drafts and human decisions ------------------------------------------------
+
+def get_draft(con, domain: str) -> dict | None:
+    row = con.execute("SELECT * FROM drafts WHERE domain=?", (domain,)).fetchone()
+    return dict(row) if row else None
+
+
+def save_draft(con, domain, contact, pains, subject, body, hook, status, notes):
+    con.execute(
+        "INSERT OR REPLACE INTO drafts (domain, contact_json, pains_json, subject, body, hook, status, notes, created_at) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
+        (domain, json.dumps(contact), json.dumps(pains), subject, body, hook, status, notes, time.time()),
+    )
+    con.commit()
+
+
+def update_draft(con, domain, **fields) -> None:
+    cols = ", ".join(f"{k}=?" for k in fields)
+    con.execute(f"UPDATE drafts SET {cols} WHERE domain=?", (*fields.values(), domain))
+    con.commit()
+
+
+def set_override(con, domain, decision, reason) -> None:
+    con.execute("INSERT OR REPLACE INTO overrides VALUES (?,?,?,?)", (domain, decision, reason, time.time()))
+    con.commit()
+
+
+def effective_decision(con, domain) -> str | None:
+    """The agent's decision, unless a human resolved a HUMAN REVIEW company."""
+    o = con.execute("SELECT decision FROM overrides WHERE domain=?", (domain,)).fetchone()
+    if o:
+        return o[0]
+    c = cached_company(con, domain)
+    return c["decision"] if c else None
 
 
 # --- logs -------------------------------------------------------------------
