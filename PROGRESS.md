@@ -1,15 +1,16 @@
 # Progress
 
 ## Done
-- Phase 1: project setup, `icp.yaml` (ICP table as data), SQLite schema + cache, 3-layer cleaner, JS-page detector, tests.
-- Phase 2: polite fetcher (robots.txt, 1 req/s/host, Playwright fallback, login pages skipped), homepage link discovery,
-  news (Google News -> Bing News RSS -> GDELT), Lusha (optional), Gemini extraction with schema + quote check,
-  capped agent loop with short-circuit, GO / NO-GO / HUMAN REVIEW with evidence, CLI (`run`, `models`, `check-keys`).
-  42 offline tests pass. Live fetching checked on chargebee.com and freshworks.com.
+- Phase 1: `icp.yaml`, SQLite cache, cleaner, JS detector, tests.
+- Phase 2: polite fetcher + browser fallback, news (Bing RSS), capped agent loop, CLI. Live on 8 domains.
+- Phase 3: Hunter contact (cached), pain points, validated email. Live draft for hevodata.com passed all checks.
+- Phase 4: Streamlit review gate, Gmail send locked to TEST_RECIPIENT, edit % tile, `send --dry-run`.
+- Phase 5: evidence page, README, docs/ASSUMPTIONS.md, docs/DEMO.md. Live checks: cache rerun = 0 new calls;
+  SIMULATE_FAIL gemini/blocked/js/hunter all degrade to HUMAN REVIEW. 66 tests pass.
 
 ## Doing
-- Checkpoint 1: waiting for GEMINI_API_KEY in .env.local, then `uv run outreach models` and a live run.
+- Waiting on the real Gmail app password (the one given was a placeholder) to send the first email.
 
 ## Next
-- Phase 3 (Hunter, pain points, email), Phase 4 (review gate, Gmail), Phase 5 (evidence page, docs, demo), Phase 6 (Excel sync:
-  `Sprinto_Outreach_Components_Map.xlsx` is not in this folder; only `~/Downloads/PM_Developer_Assignment_Components_Map.xlsx` exists).
+- Send one email to the inbox. Phase 6: `Sprinto_Outreach_Components_Map.xlsx` is not in this folder (the file in
+  Downloads belongs to a different assignment), so it needs the right file.
