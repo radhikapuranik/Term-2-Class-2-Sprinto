@@ -47,6 +47,12 @@ def cmd_draft(args) -> None:
         print(f"\nSubject: {dr['subject']}\n\n{dr['body']}")
 
 
+def cmd_send(args) -> None:
+    """Approve and send one draft from the terminal (same recipient lock as the review page)."""
+    from .send import review
+    print(review(db.connect(), args.domain, "approved", dry_run=args.dry_run))
+
+
 def set_env_line(name: str, value: str) -> None:
     """Write one non-secret line into .env.local without touching (or printing) the keys."""
     p = ROOT / ".env.local"
@@ -130,6 +136,10 @@ def main() -> None:
     dr.add_argument("--reason", default="human reviewer approved from CLI")
     dr.add_argument("--redraft", action="store_true")
     dr.set_defaults(fn=cmd_draft)
+    se = sub.add_parser("send", help="approve and send one draft to TEST_RECIPIENT")
+    se.add_argument("domain")
+    se.add_argument("--dry-run", action="store_true", help="print the email instead of sending")
+    se.set_defaults(fn=cmd_send)
     sub.add_parser("models", help="pick the newest Gemini Flash model").set_defaults(fn=cmd_models)
     sub.add_parser("check-keys", help="test each key with a harmless call").set_defaults(fn=cmd_check_keys)
     args = ap.parse_args()
