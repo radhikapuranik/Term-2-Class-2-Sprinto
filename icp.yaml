@@ -1,0 +1,149 @@
+# Sprinto ICP table. This file is the spec: the code reads every rule from here.
+# retries = how many sources (attempts) the agent may try for that parameter.
+# if_unanswered: reject | human_review | skip_low_weight | proceed
+# Outcome per parameter: qualifies | rejects | neutral (answered, not qualifying) | unanswered
+
+limits:
+  max_fetches_per_company: 8
+  max_seconds_per_company: 60
+  max_tokens_per_call: 7000
+  invalid_llm_tries: 2
+
+# Layer-2 cleaner keywords (text near these is kept first).
+keywords: [SOC 2, SOC2, ISO 27001, ISO27001, GDPR, HIPAA, security, compliance, audit,
+  trust, customers, clients, case study, careers, jobs, hiring, AWS, Amazon Web Services,
+  Azure, enterprise, employees, team, Series, funding, raised, fintech, healthtech]
+
+parameters:
+  - id: company_type
+    name: Company type
+    qualifying_answer: SaaS (hard filter)
+    where_to_look: [home, google_news]
+    sufficiency: Sells a software product online
+    retries: 1
+    if_unanswered: reject
+    auto_reject: Not SaaS
+    weight: hard
+    kind: category
+    allowed: [saas, not_saas]
+    qualify_values: [saas]
+    reject_values: [not_saas]
+    keywords: [software, platform, SaaS, cloud, app, API, pricing, product]
+    ask: >-
+      Is this company a SaaS business, i.e. does it sell a software product delivered online?
+      value = "saas" or "not_saas".
+
+  - id: funding_stage
+    name: Funding stage
+    qualifying_answer: Series A to C
+    where_to_look: [google_news, lusha]
+    sufficiency: A named funding round
+    retries: 2
+    if_unanswered: human_review
+    auto_reject: Seed only, or public
+    weight: hard
+    kind: category
+    allowed: [pre_seed, seed, series_a, series_b, series_c, series_d_plus, public, bootstrapped]
+    qualify_values: [series_a, series_b, series_c]
+    reject_values: [pre_seed, seed, public]
+    keywords: [Series, seed, raised, funding, round, IPO, investors, led by, valuation]
+    ask: >-
+      What is the latest named funding round of this company (the company itself, not another firm)?
+      value = one of the allowed labels. Only answer if a round is named in the text.
+
+  - id: employee_count
+    name: Employee count
+    qualifying_answer: 50 to 200
+    where_to_look: [lusha, about, careers]
+    sufficiency: A number or range inside 50 to 200
+    retries: 3
+    if_unanswered: human_review
+    auto_reject: Clearly outside 50 to 200
+    weight: hard
+    kind: range
+    qualify_range: [50, 200]
+    keywords: [employees, team, people, staff, headcount, strong, members, size]
+    ask: >-
+      How many employees does this company have? Put the number or range in number_min and number_max
+      (same value twice for a single number).
+
+  - id: audit_prep
+    name: Preparing for audit
+    qualifying_answer: No ISO or compliance certs visible on the site, or hiring for audit roles
+    where_to_look: [security, home, careers]
+    sufficiency: Page checked and no certs found, or an audit or compliance job post
+    retries: 3
+    if_unanswered: human_review
+    auto_reject: Already shows all the certs
+    weight: hard
+    kind: audit
+    required_certs: [SOC 2, ISO 27001]
+    min_page_chars: 300
+    keywords: [SOC 2, SOC2, ISO 27001, ISO27001, GDPR, HIPAA, certified, certification, compliance,
+      audit, security, trust, GRC, compliance manager, security engineer]
+    ask: >-
+      List every security/compliance certification or attestation the company says it HAS
+      (e.g. "SOC 2", "ISO 27001", "GDPR", "HIPAA") in items. If the text shows an open job for an
+      audit, compliance, GRC or security-compliance role, set value = "hiring_audit_role",
+      otherwise value = "none".
+
+  - id: clients
+    name: Number and size of clients
+    qualifying_answer: More than 50 clients, or more than 200 employees
+    where_to_look: [customers, home, lusha]
+    sufficiency: A client count or a list of logos
+    retries: 2
+    if_unanswered: skip_low_weight
+    auto_reject: null
+    weight: low
+    kind: clients
+    min_clients: 50
+    keywords: [customers, clients, companies, trusted by, case study, logos, teams, enterprise]
+    ask: >-
+      How many customers does the company claim? Put the count in number_min. List named customer
+      companies in items. If any named customer is a large enterprise (clearly over 200 employees),
+      set value = "enterprise_clients", otherwise value = "none".
+
+  - id: industry
+    name: Industry
+    qualifying_answer: Fintech or healthtech (optional)
+    where_to_look: [home, product, google_news]
+    sufficiency: Industry named
+    retries: 1
+    if_unanswered: proceed
+    auto_reject: null
+    weight: low
+    kind: category
+    allowed: [fintech, healthtech, other]
+    qualify_values: [fintech, healthtech]
+    reject_values: []
+    keywords: [fintech, payments, banking, finance, lending, health, healthcare, clinical, patients]
+    ask: >-
+      Which industry does the company serve or operate in? value = "fintech", "healthtech" or "other".
+
+  - id: cloud_stack
+    name: Cloud stack
+    qualifying_answer: AWS or Azure
+    where_to_look: [careers, docs, blog]
+    sufficiency: A job post or doc names the cloud
+    retries: 3
+    if_unanswered: skip_low_weight
+    auto_reject: null
+    weight: low
+    kind: cloud
+    qualify_items: [AWS, Azure]
+    keywords: [AWS, Amazon Web Services, Azure, GCP, Google Cloud, Kubernetes, cloud, infrastructure]
+    ask: >-
+      Which cloud providers does the company use? Put them in items using "AWS", "Azure", "GCP" or
+      the name given.
+
+# Page types the agent can fetch, with link words and fallback paths.
+pages:
+  home: {paths: ["/"], link_words: []}
+  about: {paths: ["/about", "/about-us", "/company"], link_words: [about, company, team]}
+  security: {paths: ["/security", "/trust", "/compliance"], link_words: [security, trust, compliance]}
+  careers: {paths: ["/careers", "/jobs"], link_words: [careers, jobs, join, hiring]}
+  customers: {paths: ["/customers", "/case-studies"], link_words: [customers, case stud, clients, stories]}
+  product: {paths: ["/product", "/platform"], link_words: [product, platform]}
+  blog: {paths: ["/blog"], link_words: [blog, engineering]}
+  docs: {paths: ["/docs"], link_words: [docs, documentation, developers]}

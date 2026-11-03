@@ -1,0 +1,34 @@
+[project]
+name = "sprinto-outreach"
+version = "0.1.0"
+description = "Sprinto cold outreach agent: qualify, find contact, draft, review, send"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "google-genai>=1.0",
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "playwright>=1.45",
+    "streamlit>=1.35",
+    "openpyxl>=3.1",
+]
+
+[project.scripts]
+outreach = "outreach.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["outreach"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
