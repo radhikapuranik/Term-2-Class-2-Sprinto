@@ -9,7 +9,7 @@
   SIMULATE_FAIL gemini/blocked/js/hunter all degrade to HUMAN REVIEW. 66 tests pass.
 
 ## Doing
-- Waiting on the real Gmail app password (the one given was a placeholder) to send the first email.
+- Sender switched to the Gmail API (OAuth, send-only). Waiting for the Google Cloud OAuth client and `outreach gmail-login`.
 
 ## Next
 - Send one email to the inbox. Phase 6: `Sprinto_Outreach_Components_Map.xlsx` is not in this folder (the file in

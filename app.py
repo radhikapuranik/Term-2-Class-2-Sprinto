@@ -6,6 +6,7 @@ import streamlit as st
 
 from outreach import db
 from outreach.contact import load_rules
+from outreach.gmail import GmailNotReady
 from outreach.llm import Gemini
 from outreach.send import RecipientLocked, review, stats
 from outreach.writer import draft_for
@@ -98,7 +99,7 @@ with review_tab:
                 if c.button("Reject", key=f"no-{dom}", disabled=not reason):
                     review(con, dom, "rejected", reason=reason)
                     st.rerun()
-            except (RecipientLocked, RuntimeError, OSError) as e:
+            except (RecipientLocked, GmailNotReady, RuntimeError, OSError) as e:
                 st.error(f"Not sent: {e}")
         st.divider()
 

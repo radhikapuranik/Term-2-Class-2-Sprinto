@@ -47,3 +47,22 @@ def test_send_records_edit_pct(con, monkeypatch):
 def test_reject_keeps_reason(con):
     review(con, "acme.com", "rejected", reason="wrong person")
     assert db.get_draft(con, "acme.com")["reject_reason"] == "wrong person"
+
+
+def test_real_send_goes_through_gmail_api_to_test_recipient_only(monkeypatch):
+    monkeypatch.setenv("TEST_RECIPIENT", "me@example.com")
+    sent = []
+    monkeypatch.setattr("outreach.send.send_raw", lambda raw: sent.append(raw) or "id1")
+    assert send_email("me@example.com", "Hi", "Body", intended_for="Priya <priya@acme.com>") == "sent"
+    assert b"To: me@example.com" in sent[0] and b"priya@acme.com" in sent[0]  # prospect only in X-Intended-For
+    assert b"\nTo: priya" not in sent[0]
+    with pytest.raises(RecipientLocked):
+        send_email("priya@acme.com", "Hi", "Body")
+    assert len(sent) == 1
+
+
+def test_gmail_not_connected_is_a_clear_error(monkeypatch, tmp_path):
+    from outreach import gmail
+    monkeypatch.setattr(gmail, "TOKEN_FILE", tmp_path / "none.json")
+    with pytest.raises(gmail.GmailNotReady):
+        gmail.credentials()

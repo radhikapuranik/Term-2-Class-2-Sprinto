@@ -1,12 +1,12 @@
-"""Step 7: the review gate's actions and Gmail sending, locked to TEST_RECIPIENT."""
+"""Step 7: the review gate's actions and sending via the Gmail API, locked to TEST_RECIPIENT."""
 import difflib
 import json
-import smtplib
 import time
 from email.message import EmailMessage
 
 from . import db
 from .config import env
+from .gmail import send_raw
 
 
 class RecipientLocked(Exception):
@@ -35,11 +35,7 @@ def send_email(to: str, subject: str, body: str, intended_for: str = "", dry_run
     if dry_run:
         print(f"--- DRY RUN (not sent) ---\n{msg}")
         return "dry-run"
-    if not (env("GMAIL_ADDRESS") and env("GMAIL_APP_PASSWORD")):
-        raise RuntimeError("GMAIL_ADDRESS or GMAIL_APP_PASSWORD is empty in .env.local")
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as s:
-        s.login(env("GMAIL_ADDRESS"), env("GMAIL_APP_PASSWORD"))
-        s.send_message(msg)
+    send_raw(msg.as_bytes())  # Gmail API, OAuth send-only scope
     return "sent"
 
 
