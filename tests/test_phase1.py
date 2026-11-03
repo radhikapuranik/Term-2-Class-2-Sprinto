@@ -38,8 +38,10 @@ def test_icp_loads_all_seven_rows():
     ("employee_count", Answer(number_min=11, number_max=50), "neutral"),
     ("audit_prep", Answer(value="hiring_audit_role", items=["SOC 2", "ISO 27001"]), "qualifies"),
     ("audit_prep", Answer(value="none", items=["SOC 2", "ISO 27001", "GDPR"]), "rejects"),
-    ("audit_prep", Answer(value="none", items=[], page_chars=900), "qualifies"),
-    ("audit_prep", Answer(value="none", items=[], page_chars=20), "unanswered"),
+    ("audit_prep", Answer(value="none", items=[], page_chars=900, source_kind="security"), "qualifies"),
+    ("audit_prep", Answer(value="none", items=[], page_chars=900, source_kind="careers"), "unanswered"),
+    ("audit_prep", Answer(value="none", page_chars=900, source_kind="security", certs_unnamed=True), "unanswered"),
+    ("audit_prep", Answer(value="none", items=[], page_chars=20, source_kind="security"), "unanswered"),
     ("audit_prep", Answer(value="none", items=["SOC2"], page_chars=900), "neutral"),
     ("clients", Answer(number_min=300), "qualifies"),
     ("clients", Answer(value="enterprise_clients", items=["Siemens"]), "qualifies"),
@@ -125,3 +127,15 @@ def test_cache_roundtrip(tmp_path):
     db.clear_company(con, "acme.com")
     assert db.cached_company(con, "acme.com") is None
     assert db.cached_api(con, "hunter:acme.com") == {"emails": []}  # paid lookups survive --refresh
+
+
+def test_badge_image_filenames_count_as_certs():
+    page = '<html><body><main><h1>Security</h1><img src="/m/aicpa-logo.webp"><img alt="ISO 27001 certified"></main></body></html>'
+    text = clean_html(page, ICP.keywords)
+    assert "SOC 2 (AICPA logo) badge image" in text and "ISO 27001 certified" in text
+
+
+def test_server_rendered_menu_with_empty_body_needs_js():
+    menu = "".join(f"<li>Menu item number {i} with words</li>" for i in range(80))
+    page = f'<html><body><div class="site-nav"><ul>{menu}</ul></div><div id="__nuxt"><h1>Security</h1></div></body></html>'
+    assert needs_js(page)

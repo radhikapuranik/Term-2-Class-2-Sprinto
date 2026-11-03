@@ -118,7 +118,9 @@ class Fetcher:
                 browser = pw.chromium.launch()
                 page = browser.new_page(user_agent=USER_AGENT)
                 self._wait_turn(urlparse(url).netloc)
-                page.goto(url, timeout=int(max(3, min(15, time_left)) * 1000), wait_until="networkidle")
+                # "networkidle" never fires on pages with live analytics, so wait for the DOM plus a short pause
+                page.goto(url, timeout=int(max(3, min(15, time_left)) * 1000), wait_until="domcontentloaded")
+                page.wait_for_timeout(2500)
                 html = page.content()
                 browser.close()
             return html, None

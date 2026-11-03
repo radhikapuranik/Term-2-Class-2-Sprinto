@@ -32,6 +32,7 @@ class Parameter(BaseModel):
     qualify_range: tuple[int, int] | None = None
     required_certs: list[str] = []
     min_page_chars: int = 0
+    absence_pages: list[str] = []
     min_clients: int = 0
     qualify_items: list[str] = []
 
@@ -71,6 +72,8 @@ class Answer(BaseModel):
     evidence_quote: str = ""
     confidence: float = 0.0
     page_chars: int = 0  # length of the cleaned page the answer came from
+    source_kind: str = ""  # page type the answer came from (home, security, careers...)
+    certs_unnamed: bool = False  # page talks about "our certifications" without naming them
 
 
 def _norm(s: str) -> str:
@@ -107,6 +110,10 @@ def evaluate(p: Parameter, a: Answer) -> tuple[Outcome, str]:
         if len(required) == len(p.required_certs):
             return "rejects", f"already shows {', '.join(p.required_certs)}"
         if not a.items:
+            if p.absence_pages and a.source_kind not in p.absence_pages:
+                return "unanswered", f"no certs on the {a.source_kind} page, but only a security page can prove absence"
+            if a.certs_unnamed:
+                return "unanswered", "page mentions certifications without naming them (likely a gated trust portal)"
             if a.page_chars >= p.min_page_chars:
                 return "qualifies", f"page checked ({a.page_chars} chars) and no certs found"
             return "unanswered", f"page too thin to trust 'no certs' ({a.page_chars} chars)"

@@ -53,6 +53,7 @@ class Run:
         self.links: dict[str, str] = db.cached_api(con, f"links:{domain}") or {}
         self.name = domain.split(".")[0].capitalize()
         self.stop_reason = ""
+        self.site_down: str | None = None  # set when the homepage is blocked or unreachable
 
     def log(self, event: str) -> None:
         db.log(self.con, self.domain, event)
@@ -76,9 +77,17 @@ class Run:
             self.fetches += net
         else:
             url = self.links.get(kind) or urljoin(f"https://{self.domain}", self.icp.pages[kind].paths[0])
+            if self.site_down:  # don't hammer a site that already refused us
+                page = {"url": url, "status": "blocked", "clean_text": "", "method": "http",
+                        "error": f"skipped, homepage failed ({self.site_down})"}
+                self.sources[kind] = page
+                return page
             self._need_fetch(url)
             page, net, html = self.fetcher.fetch_page(self.domain, kind, url, self.time_left())
             self.fetches += net
+            if kind == "home" and page["status"] in ("blocked", "error") and not (page["error"] or "").startswith("HTTP 404"):
+                self.site_down = page["error"]
+                self.log(f"homepage failed ({self.site_down}); skipping the rest of this site")
             if kind == "home" and html:
                 self.links = Fetcher.discover_links(html, page["url"], self.domain, self.icp.pages)
                 db.save_api(self.con, f"links:{self.domain}", self.links)
@@ -153,6 +162,7 @@ class Run:
                     continue
                 if ans is None:
                     continue
+                ans.source_kind = kind
                 outcome, reason = evaluate(p, ans)
                 rec = {"outcome": outcome, "reason": reason, "answer": ans.model_dump(), "quote": ans.evidence_quote,
                        "url": page["url"], "attempts": s.attempts, "error": None}

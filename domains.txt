@@ -1,1 +1,8 @@
-# One company domain per line. Lines starting with # are ignored.
+hevodata.com
+zluri.com
+signzy.com
+leadsquared.com
+whatfix.com
+chargebee.com
+freshworks.com
+zomato.com

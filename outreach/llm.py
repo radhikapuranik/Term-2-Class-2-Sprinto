@@ -61,13 +61,17 @@ class Gemini:
         if simulate("gemini"):
             raise LLMDown("SIMULATE_FAIL=gemini")
         from google.genai import types
+        cfg = dict(response_mime_type="application/json", response_schema=schema, temperature=0.2)
         try:
-            resp = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json", response_schema=schema, temperature=0.2),
-            )
+            try:  # no "thinking" for extraction: ~2s instead of ~4s per call, which keeps us inside the 60s cap
+                resp = self.client.models.generate_content(
+                    model=self.model, contents=prompt,
+                    config=types.GenerateContentConfig(**cfg, thinking_config=types.ThinkingConfig(thinking_budget=0)))
+            except Exception as e:
+                if "INVALID_ARGUMENT" not in str(e):
+                    raise
+                resp = self.client.models.generate_content(
+                    model=self.model, contents=prompt, config=types.GenerateContentConfig(**cfg))
         except LLMDown:
             raise
         except Exception as e:
@@ -101,7 +105,7 @@ TEXT:
 {text}
 >>>"""
 
-CERT_PATTERNS = {"SOC 2": r"soc\s?-?\s?2", "ISO 27001": r"iso\s?/?\s?(iec\s?)?27001", "GDPR": r"\bgdpr\b",
+CERT_PATTERNS = {"SOC 2": r"soc\s?-?\s?2|aicpa", "ISO 27001": r"iso\s?/?\s?(iec\s?)?27001", "GDPR": r"\bgdpr\b",
                  "HIPAA": r"\bhipaa\b"}
 
 
@@ -145,8 +149,11 @@ def extract_param(llm: Gemini, p: Parameter, text: str, source: str, domain: str
         for cert, pat in CERT_PATTERNS.items():
             if re.search(pat, text, re.I) and cert not in items and _claims(text, pat):
                 items.append(cert)
+    unnamed = bool(re.search(r"(our|all) (\w+ )?(certifications|attestations)|(visit|see|access|request)\W+(\w+\W+){0,4}trust (center|portal)|request (our )?(soc|report)",
+                             text, re.I))
     return Answer(value=ex.value, number_min=ex.number_min, number_max=ex.number_max, items=items,
-                  evidence_quote=ex.evidence_quote, confidence=ex.confidence, page_chars=len(text)), invalid, None
+                  evidence_quote=ex.evidence_quote, confidence=ex.confidence, page_chars=len(text),
+                  certs_unnamed=unnamed), invalid, None
 
 
 def _claims(text: str, pat: str) -> bool:

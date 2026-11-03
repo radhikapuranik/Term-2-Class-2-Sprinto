@@ -79,6 +79,7 @@ parameters:
     kind: audit
     required_certs: [SOC 2, ISO 27001]
     min_page_chars: 300
+    absence_pages: [security]   # only a real security / trust page can prove "no certs"
     keywords: [SOC 2, SOC2, ISO 27001, ISO27001, GDPR, HIPAA, certified, certification, compliance,
       audit, security, trust, GRC, compliance manager, security engineer]
     ask: >-
@@ -119,7 +120,9 @@ parameters:
     reject_values: []
     keywords: [fintech, payments, banking, finance, lending, health, healthcare, clinical, patients]
     ask: >-
-      Which industry does the company serve or operate in? value = "fintech", "healthtech" or "other".
+      Which industry is this company's own product in? value = "fintech" only if the product itself is
+      financial (payments, banking, lending, billing), "healthtech" only if it is a healthcare product, else
+      "other". Customer industries listed on the site do not count.
 
   - id: cloud_stack
     name: Cloud stack
