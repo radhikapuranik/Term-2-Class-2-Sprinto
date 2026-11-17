@@ -1,7 +1,7 @@
 import { api, chip, dryRun, empty, esc, fmt, html, icon, info, raw, render, ring, sourceChip, term, toast } from "../lib.js";
 import { animate, burst, motionOK, shake } from "../motion.js";
 
-const UNDO_MS = 8000;
+const UNDO_MS = window.__UNDO_MS ?? 8000; // tests shorten the undo window
 
 function hookBody(body, hook) {
   let out = esc(body);

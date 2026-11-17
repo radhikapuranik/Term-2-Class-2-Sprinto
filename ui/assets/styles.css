@@ -479,3 +479,25 @@ blockquote.quote { margin: 0; font: 400 19px/1.45 var(--serif); letter-spacing: 
 .chip { flex: none; }
 .hero h1 { position: relative; z-index: 0; }
 @media (max-width: 760px) { .tiles .tile:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+
+/* ---- critique round 2 ------------------------------------------------------------------ */
+mark.hl, .hl { background-color: transparent; color: inherit; }
+.tile-label { flex-wrap: wrap; }
+.card-title { flex-wrap: wrap; }
+.name-chip { flex-wrap: wrap; border-radius: 14px; row-gap: 0; }
+@media (max-width: 1500px) {
+  .desk { grid-template-columns: minmax(0, 1fr); }
+  .side { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
+}
+@media (max-width: 760px) {
+  .nav a { font-size: 9.5px; letter-spacing: -.01em; }
+  .nav a span:not(.nav-count) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .name-chip .mono { display: none; }
+  .mail-actions .btn.big { flex: 1 1 100%; }
+  .mail-subject { font-size: 22px; }
+}
+/* AA contrast for chip text on tinted backgrounds (light mode needs a darker ink) */
+:root { --go-ink: #0B6A4B; --nogo-ink: #A52A24; }
+:root[data-theme="dark"] { --go-ink: var(--go); --nogo-ink: var(--nogo); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --go-ink: var(--go); --nogo-ink: var(--nogo); } }
+.chip.go, .outcome.qualifies { --t: var(--go-ink); } .chip.nogo { --t: var(--nogo-ink); }
