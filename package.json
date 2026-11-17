@@ -1,0 +1,11 @@
+{
+  "name": "outreach-desk",
+  "private": true,
+  "description": "Front-end assets for Outreach Desk, served locally by FastAPI (no build step).",
+  "dependencies": {
+    "gsap": "3.12.5",
+    "@fontsource/instrument-serif": "5.1.0",
+    "@fontsource-variable/inter": "5.1.0",
+    "@fontsource-variable/jetbrains-mono": "5.1.0"
+  }
+}
