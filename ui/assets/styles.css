@@ -308,7 +308,7 @@ blockquote.quote { margin: 0; font: 400 19px/1.45 var(--serif); letter-spacing: 
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
 /* ---- review ----------------------------------------------------------------------- */
-.review { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--s4); align-items: start; }
+.review-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--s4); align-items: start; }
 .queue { position: sticky; top: calc(var(--ribbon) + 24px); display: grid; gap: 6px; }
 .queue-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; text-align: left; width: 100%; padding: 12px;
   border-radius: var(--r2); border: 1px solid transparent; background: transparent; cursor: pointer; transition: background .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease); }
@@ -431,7 +431,7 @@ blockquote.quote { margin: 0; font: 400 19px/1.45 var(--serif); letter-spacing: 
   .span-3 { grid-column: span 6; }
 }
 @media (max-width: 860px) {
-  .review { grid-template-columns: minmax(0, 1fr); }
+  .review-layout { grid-template-columns: minmax(0, 1fr); }
   .queue { position: static; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); overflow-x: auto; padding-bottom: 4px; }
 }
 @media (max-width: 760px) {
@@ -474,3 +474,8 @@ blockquote.quote { margin: 0; font: 400 19px/1.45 var(--serif); letter-spacing: 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* ---- fixes after first look ---------------------------------------------------------- */
+.chip { flex: none; }
+.hero h1 { position: relative; z-index: 0; }
+@media (max-width: 760px) { .tiles .tile:last-child:nth-child(odd) { grid-column: 1 / -1; } }
