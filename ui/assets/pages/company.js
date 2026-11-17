@@ -78,7 +78,7 @@ export async function render_(view, [domain], ctx) {
           ${stopReason ? html`<p class="muted" style="font-size:13px;margin-top:14px">Stopped because: ${stopReason}${c.elapsed_s ? ` · ${c.elapsed_s}s` : ""}</p>` : ""}
         </section>
         <section class="card" data-reveal aria-labelledby="cost-h"><h2 class="h3" id="cost-h">Cost of this research</h2>
-          <dl class="rule-grid" style="margin-top:12px">
+          <dl class="rule-grid" style="margin-top:12px;grid-template-columns:1fr 1fr">
             <div><dt>Gemini calls</dt><dd class="num">${fmt.n(c.cost.gemini_calls)}</dd></div>
             <div><dt>${term("tokens", "Tokens")}</dt><dd class="num">${fmt.n(c.cost.tokens_in + c.cost.tokens_out)}</dd></div>
             <div><dt>Pages (HTML)</dt><dd class="num">${fmt.n(c.cost.methods.http || 0)}</dd></div>

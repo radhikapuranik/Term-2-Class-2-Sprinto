@@ -15,7 +15,7 @@ function heroSentence(s) {
 }
 
 function funnelSvg(stages) {
-  const W = 700, H = 170, pad = 24, max = Math.max(1, ...stages.map((s) => s.count));
+  const W = 700, H = 170, pad = W / 14, max = Math.max(1, ...stages.map((s) => s.count));
   const pts = stages.map((s, i) => [pad + (i * (W - 2 * pad)) / (stages.length - 1), 18 + (1 - s.count / max) * (H - 50)]);
   let d = `M${pts[0][0]},${pts[0][1]}`;
   for (let i = 1; i < pts.length; i++) {
