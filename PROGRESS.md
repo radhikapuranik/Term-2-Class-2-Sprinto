@@ -14,5 +14,8 @@
 - Read-only snapshot on Vercel: https://sprinto-outreach-six.vercel.app (no keys, no send button, emails hidden).
   71 tests pass.
 
+- Phase 6: `Sprinto_Outreach_Components_Map.xlsx` rebuilt in the course's component-map layout and colours
+  (Component map, Steps in order, Where AI is used, Keys), matching the finished app.
+
 ## Next
-- Optional: Lusha key (headcount), a verified domain in Resend (open tracking), the course's own components map.
+- Optional: Lusha key (headcount), a verified domain in Resend (open tracking).
