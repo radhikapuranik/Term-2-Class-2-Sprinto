@@ -7,4 +7,3 @@ __pycache__/
 data/
 *.db
 .DS_Store
-secrets/

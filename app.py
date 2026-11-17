@@ -6,7 +6,6 @@ import streamlit as st
 
 from outreach import db
 from outreach.contact import load_rules
-from outreach.gmail import GmailNotReady
 from outreach.llm import Gemini
 from outreach.send import RecipientLocked, review, stats
 from outreach.writer import draft_for
@@ -29,11 +28,26 @@ with c3:
         st.error("Reviewers change more than half of each draft: the automation is not saving time yet.")
 
 
+def show(result):
+    """Report a send: sent -> refresh; dry run -> note; Resend error -> back in HUMAN REVIEW."""
+    if result.startswith("human review"):
+        st.session_state["flash"] = ("error", "Not sent, back in HUMAN REVIEW: " + result.split(": ", 1)[1])
+    elif result == "dry-run":
+        st.session_state["flash"] = ("info", "Dry run: nothing sent (the email was printed in the server log).")
+    else:
+        st.session_state["flash"] = ("success", result)
+    st.rerun()
+
+
 def answers_table(domain):
     rows = con.execute("SELECT param_id, outcome, reason, evidence_quote, source_url, attempts FROM answers "
                        "WHERE domain=?", (domain,)).fetchall()
     return pd.DataFrame([dict(r) for r in rows])
 
+
+if "flash" in st.session_state:
+    kind, text = st.session_state.pop("flash")
+    getattr(st, kind)(text)
 
 review_tab, evidence_tab = st.tabs(["Review gate", "Runs and evidence"])
 
@@ -91,19 +105,17 @@ with review_tab:
             a, b, c = st.columns(3)
             try:
                 if a.button("Approve and send", key=f"ok-{dom}", disabled=not d["body"]):
-                    st.success(f"Approved: {review(con, dom, 'approved', dry_run=dry_run)}")
-                    st.rerun()
+                    show(review(con, dom, 'approved', dry_run=dry_run))
                 if b.button("Edit and send", key=f"ed-{dom}", disabled=not body):
-                    st.success(f"Edited: {review(con, dom, 'edited', subj, body, dry_run=dry_run)}")
-                    st.rerun()
+                    show(review(con, dom, 'edited', subj, body, dry_run=dry_run))
                 if c.button("Reject", key=f"no-{dom}", disabled=not reason):
                     review(con, dom, "rejected", reason=reason)
                     st.rerun()
-            except (RecipientLocked, GmailNotReady, RuntimeError, OSError) as e:
+            except (RecipientLocked, OSError) as e:
                 st.error(f"Not sent: {e}")
         st.divider()
 
-    done = [dict(r) for r in con.execute("SELECT domain, status, review_action, edit_ratio, final_subject, reject_reason "
+    done = [dict(r) for r in con.execute("SELECT domain, status, review_action, edit_ratio, final_subject, resend_id, reject_reason "
                                          "FROM drafts WHERE status IN ('sent','rejected')")]
     if done:
         st.subheader("Reviewed")

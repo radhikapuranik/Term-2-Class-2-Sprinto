@@ -1,7 +1,10 @@
 """Recipient lock, edit %, and the review actions."""
+import json
+
+import httpx
 import pytest
 
-from outreach import db
+from outreach import db, resend_mail
 from outreach.send import RecipientLocked, edit_ratio, review, send_email, stats
 
 
@@ -49,20 +52,65 @@ def test_reject_keeps_reason(con):
     assert db.get_draft(con, "acme.com")["reject_reason"] == "wrong person"
 
 
-def test_real_send_goes_through_gmail_api_to_test_recipient_only(monkeypatch):
-    monkeypatch.setenv("TEST_RECIPIENT", "me@example.com")
-    sent = []
-    monkeypatch.setattr("outreach.send.send_raw", lambda raw: sent.append(raw) or "id1")
-    assert send_email("me@example.com", "Hi", "Body", intended_for="Priya <priya@acme.com>") == "sent"
-    assert b"To: me@example.com" in sent[0] and b"priya@acme.com" in sent[0]  # prospect only in X-Intended-For
-    assert b"\nTo: priya" not in sent[0]
+def _resend(status=200, body=None, seen=None):
+    """A fake Resend API (httpx MockTransport): records requests, answers with status/body."""
+    def handler(req):
+        if seen is not None:
+            seen.append(req)
+        return httpx.Response(status, json=body if body is not None else {"id": "re_123"})
+    return httpx.MockTransport(handler)
+
+
+@pytest.fixture
+def fake_resend(monkeypatch):
+    """Route outreach's Resend calls through a mock; returns the list of requests made."""
+    class Seen(list):
+        state = {"status": 200, "body": None}
+    seen = Seen()
+    state = seen.state
+    monkeypatch.setenv("RESEND_API_KEY", "re_test_not_real")
+    real = resend_mail.send
+    monkeypatch.setattr("outreach.send.send", lambda *a, **k: real(
+        *a, transport=_resend(state["status"], state["body"], seen), **k))
+    return seen
+
+
+def test_real_send_goes_to_test_recipient_only_as_html_and_text(con, fake_resend):
+    assert review(con, "acme.com", "approved") == "sent (Resend id re_123)"
+    p = json.loads(fake_resend[0].content)
+    assert p["to"] == ["me@example.com"] and "onboarding@resend.dev" in p["from"]
+    assert p["text"] == "Hi Priya, short note." and p["html"] == "<p>Hi Priya, short note.</p>"
+    assert p["headers"]["X-Intended-For"].startswith("Priya S <priya@acme.com>")  # prospect never in "to"
+    assert fake_resend[0].headers["authorization"] == "Bearer re_test_not_real"
+    d = db.get_draft(con, "acme.com")
+    assert d["status"] == "sent" and d["resend_id"] == "re_123" and d["edit_ratio"] == 0
     with pytest.raises(RecipientLocked):
         send_email("priya@acme.com", "Hi", "Body")
-    assert len(sent) == 1
+    assert len(fake_resend) == 1
 
 
-def test_gmail_not_connected_is_a_clear_error(monkeypatch, tmp_path):
-    from outreach import gmail
-    monkeypatch.setattr(gmail, "TOKEN_FILE", tmp_path / "none.json")
-    with pytest.raises(gmail.GmailNotReady):
-        gmail.credentials()
+def test_dry_run_never_calls_resend(con, fake_resend):
+    assert review(con, "acme.com", "approved", dry_run=True) == "dry-run"
+    assert fake_resend == []
+
+
+def test_resend_error_goes_to_human_review_not_crash(con, fake_resend):
+    fake_resend.state.update(status=403, body={"message": "You can only send testing emails to your own email address"})
+    out = review(con, "acme.com", "approved")
+    d = db.get_draft(con, "acme.com")
+    assert out.startswith("human review") and d["status"] == "human_review"
+    assert "signed up to Resend with" in d["notes"] and d["resend_id"] is None
+
+
+def test_resend_outage_and_missing_key_go_to_human_review(con, fake_resend, monkeypatch):
+    monkeypatch.setenv("SIMULATE_FAIL", "resend")
+    assert review(con, "acme.com", "approved").startswith("human review")
+    monkeypatch.setenv("SIMULATE_FAIL", "")
+    monkeypatch.setenv("RESEND_API_KEY", "")
+    assert "RESEND_API_KEY is empty" in review(con, "acme.com", "approved")
+    assert fake_resend == []
+
+
+def test_long_subject_is_not_sent(con, fake_resend):
+    out = review(con, "acme.com", "edited", "one two three four five six seven eight", "Hi Priya, short note.")
+    assert out.startswith("human review") and fake_resend == []

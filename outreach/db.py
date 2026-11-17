@@ -61,7 +61,8 @@ CREATE TABLE IF NOT EXISTS drafts (
     edit_ratio REAL,       -- 0 = sent as drafted, 1 = fully rewritten
     review_action TEXT,    -- approved | edited | rejected
     reject_reason TEXT,
-    created_at REAL, sent_at REAL
+    created_at REAL, sent_at REAL,
+    resend_id TEXT         -- Resend's email id for a sent draft
 );
 CREATE TABLE IF NOT EXISTS overrides (
     domain TEXT PRIMARY KEY, decision TEXT, reason TEXT, ts REAL  -- a human's call on a HUMAN REVIEW company
@@ -78,6 +79,8 @@ def connect(path: Path | str = DB_PATH) -> sqlite3.Connection:
     con = sqlite3.connect(path, check_same_thread=False)
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
+    if "resend_id" not in {r[1] for r in con.execute("PRAGMA table_info(drafts)")}:
+        con.execute("ALTER TABLE drafts ADD COLUMN resend_id TEXT")  # databases made before Resend
     return con
 
 

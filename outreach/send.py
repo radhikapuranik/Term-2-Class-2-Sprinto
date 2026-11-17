@@ -1,12 +1,14 @@
-"""Step 7: the review gate's actions and sending via the Gmail API, locked to TEST_RECIPIENT."""
+"""Step 7: the review gate's actions and sending via Resend, locked to TEST_RECIPIENT."""
 import difflib
+import html
 import json
 import time
-from email.message import EmailMessage
 
 from . import db
 from .config import env
-from .gmail import send_raw
+from .resend_mail import SENDER, SendFailed, send
+
+MAX_SUBJECT_WORDS = 7  # "under 8 words"
 
 
 class RecipientLocked(Exception):
@@ -20,23 +22,26 @@ def locked_recipient() -> str:
     return to
 
 
+def to_html(body: str) -> str:
+    """Plain-text body as simple HTML: one <p> per paragraph, line breaks kept, text escaped."""
+    paras = [p.strip() for p in body.split("\n\n") if p.strip()]
+    return "".join(f"<p>{html.escape(p).replace(chr(10), '<br>')}</p>" for p in paras)
+
+
 def send_email(to: str, subject: str, body: str, intended_for: str = "", dry_run: bool = False) -> str:
-    """Send one email. Refuses any address that is not TEST_RECIPIENT (test mode is hardcoded)."""
+    """Send one email (HTML + plain text). Refuses any address that is not TEST_RECIPIENT.
+    Returns Resend's email id, or "dry-run"."""
     allowed = locked_recipient()
     if to.strip().lower() != allowed.strip().lower():
         raise RecipientLocked(f"refused: emails may only go to TEST_RECIPIENT, not {to}")
-    msg = EmailMessage()
-    msg["From"] = env("GMAIL_ADDRESS") or allowed
-    msg["To"] = allowed
-    msg["Subject"] = subject
-    if intended_for:
-        msg["X-Intended-For"] = intended_for  # the real prospect, recorded but never sent to
-    msg.set_content(body)
+    if len(subject.split()) > MAX_SUBJECT_WORDS:
+        raise SendFailed(f"subject has {len(subject.split())} words; it must be under 8")
+    headers = {"X-Intended-For": intended_for} if intended_for else None  # the real prospect, never sent to
     if dry_run:
-        print(f"--- DRY RUN (not sent) ---\n{msg}")
+        print(f"--- DRY RUN (not sent) ---\nFrom: {SENDER}\nTo: {allowed}\nSubject: {subject}\n"
+              f"X-Intended-For: {intended_for}\n\n{body}")
         return "dry-run"
-    send_raw(msg.as_bytes())  # Gmail API, OAuth send-only scope
-    return "sent"
+    return send(allowed, subject, body, to_html(body), headers)
 
 
 def edit_ratio(original: str, final: str) -> float:
@@ -46,7 +51,8 @@ def edit_ratio(original: str, final: str) -> float:
 
 def review(con, domain: str, action: str, subject: str = "", body: str = "", reason: str = "",
            dry_run: bool = False) -> str:
-    """Apply a reviewer action: approved | edited | rejected. Returns what happened."""
+    """Apply a reviewer action: approved | edited | rejected. Returns what happened.
+    A send failure puts the draft back in HUMAN REVIEW with the reason instead of crashing."""
     d = db.get_draft(con, domain)
     if not d:
         raise ValueError(f"no draft for {domain}")
@@ -58,10 +64,15 @@ def review(con, domain: str, action: str, subject: str = "", body: str = "", rea
     ratio = edit_ratio(f"{d['subject']}\n{d['body']}", f"{subject}\n{body}")
     c = json.loads(d["contact_json"] or "{}")
     intended = f"{c.get('first_name', '')} {c.get('last_name', '')} <{c.get('email', '')}>, {c.get('title', '')}"
-    result = send_email(locked_recipient(), subject, body, intended, dry_run)
-    if result == "sent":
+    try:
+        result = send_email(locked_recipient(), subject, body, intended, dry_run)
+    except SendFailed as e:
+        db.update_draft(con, domain, status="human_review", notes=f"Not sent: {e}")
+        return f"human review: {e}"
+    if result != "dry-run":
         db.update_draft(con, domain, status="sent", review_action=action, final_subject=subject, final_body=body,
-                        edit_ratio=ratio, sent_at=time.time())
+                        edit_ratio=ratio, sent_at=time.time(), resend_id=result)
+        return f"sent (Resend id {result})"
     return result
 
 

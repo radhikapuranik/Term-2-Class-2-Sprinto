@@ -53,14 +53,6 @@ def cmd_send(args) -> None:
     print(review(db.connect(), args.domain, "approved", dry_run=args.dry_run))
 
 
-def cmd_gmail_login(args) -> None:
-    from .gmail import GmailNotReady, login
-    try:
-        print(f"Gmail token {login()} to secrets/gmail_token.json (send-only; never printed).")
-    except GmailNotReady as e:
-        sys.exit(str(e))
-
-
 def set_env_line(name: str, value: str) -> None:
     """Write one non-secret line into .env.local without touching (or printing) the keys."""
     p = ROOT / ".env.local"
@@ -121,12 +113,9 @@ def cmd_check_keys(args) -> None:
         r = httpx.get("https://api.lusha.com/v2/company", params={"domain": "lusha.com"},
                       headers={"api_key": env("LUSHA_API_KEY")}, timeout=10)
         print("LUSHA_API_KEY: " + ("works" if r.status_code == 200 else f"does not work, check the key (HTTP {r.status_code})"))
-    from .gmail import GmailNotReady, credentials
-    try:
-        credentials()  # harmless: loads and, if needed, refreshes the token; sends nothing
-        print("Gmail (OAuth, send-only): works")
-    except GmailNotReady as e:
-        print(f"Gmail (OAuth, send-only): does not work, {e}")
+    if env("RESEND_API_KEY"):
+        from .resend_mail import check_key
+        print(f"RESEND_API_KEY: {check_key()}")
 
 
 def main() -> None:
@@ -146,7 +135,6 @@ def main() -> None:
     se.add_argument("domain")
     se.add_argument("--dry-run", action="store_true", help="print the email instead of sending")
     se.set_defaults(fn=cmd_send)
-    sub.add_parser("gmail-login", help="connect Gmail once (OAuth, send-only)").set_defaults(fn=cmd_gmail_login)
     sub.add_parser("models", help="pick the newest Gemini Flash model").set_defaults(fn=cmd_models)
     sub.add_parser("check-keys", help="test each key with a harmless call").set_defaults(fn=cmd_check_keys)
     args = ap.parse_args()
