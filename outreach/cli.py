@@ -53,6 +53,11 @@ def cmd_send(args) -> None:
     print(review(db.connect(), args.domain, "approved", dry_run=args.dry_run))
 
 
+def cmd_site(args) -> None:
+    from .site import build
+    print(f"Read-only snapshot written to {build()} (deploy: vercel deploy site --prod)")
+
+
 def set_env_line(name: str, value: str) -> None:
     """Write one non-secret line into .env.local without touching (or printing) the keys."""
     p = ROOT / ".env.local"
@@ -135,6 +140,7 @@ def main() -> None:
     se.add_argument("domain")
     se.add_argument("--dry-run", action="store_true", help="print the email instead of sending")
     se.set_defaults(fn=cmd_send)
+    sub.add_parser("site", help="write the read-only snapshot page to site/ for Vercel").set_defaults(fn=cmd_site)
     sub.add_parser("models", help="pick the newest Gemini Flash model").set_defaults(fn=cmd_models)
     sub.add_parser("check-keys", help="test each key with a harmless call").set_defaults(fn=cmd_check_keys)
     args = ap.parse_args()

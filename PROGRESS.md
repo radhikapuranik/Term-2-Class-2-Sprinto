@@ -8,10 +8,11 @@
 - Phase 5: evidence page, README, docs/ASSUMPTIONS.md, docs/DEMO.md. Live checks: cache rerun = 0 new calls;
   SIMULATE_FAIL gemini/blocked/js/hunter all degrade to HUMAN REVIEW. 66 tests pass.
 
-## Doing
-- Sender switched to Resend (HTML + text, id stored, errors → HUMAN REVIEW). Gmail code removed. 71 tests pass.
-  Waiting for `RESEND_API_KEY` in `.env.local` to do the real send of the Hevo draft.
+- Sender switched to Resend (HTML + text, id stored, errors -> HUMAN REVIEW). Gmail code removed.
+- Real send of the Hevo draft through the review page: sent via Resend, edit 0%, Resend id stored.
+  TEST_RECIPIENT is the Resend signup address (Resend's test sender only delivers there).
+- Read-only snapshot on Vercel: https://sprinto-outreach-six.vercel.app (no keys, no send button, emails hidden).
+  71 tests pass.
 
 ## Next
-- Send one email to the inbox. Phase 6: `Sprinto_Outreach_Components_Map.xlsx` is not in this folder (the file in
-  Downloads belongs to a different assignment), so it needs the right file.
+- Optional: Lusha key (headcount), a verified domain in Resend (open tracking), the course's own components map.

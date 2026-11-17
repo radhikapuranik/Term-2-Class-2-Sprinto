@@ -16,7 +16,7 @@ def _explain(status: int, body: dict) -> str:
     msg = str(body.get("message", ""))
     if status == 403 and ("own email" in msg or "verify a domain" in msg or "testing emails" in msg):
         return ("Resend's free test sender can only deliver to the address you signed up to Resend with. "
-                "Set TEST_RECIPIENT in .env.local to that exact address.")
+                f"Set TEST_RECIPIENT in .env.local to that exact address. Resend said: {msg.split('. ')[0]}")
     if status in (401, 403):
         return "Resend did not accept RESEND_API_KEY. Check the key in .env.local (it starts with re_)."
     if status == 422:

@@ -13,6 +13,7 @@ uv run outreach run domains.txt           # steps 1-6 for every domain (cached; 
 uv run streamlit run app.py               # review gate + runs and evidence page (http://localhost:8501)
 uv run outreach draft acme.com --reason "why a human says GO"   # steps 4-6 for a HUMAN REVIEW company
 uv run outreach send acme.com --dry-run   # print the approved email instead of sending
+uv run outreach site                      # read-only snapshot page in site/ (live: https://sprinto-outreach-six.vercel.app)
 uv run pytest                             # 68 offline tests, no keys or network needed
 ```
 
