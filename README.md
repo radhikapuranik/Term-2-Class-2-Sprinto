@@ -13,7 +13,7 @@ uv run outreach run domains.txt           # steps 1-6 for every domain (cached; 
 python run_ui.py                          # Outreach Desk: opens http://127.0.0.1:8600 (review, evidence, runs)
 uv run outreach draft acme.com --reason "why a human says GO"   # steps 4-6 for a HUMAN REVIEW company
 uv run outreach send acme.com --dry-run   # print the approved email instead of sending
-uv run outreach site                      # read-only snapshot page in site/ (live: https://sprinto-outreach-six.vercel.app)
+uv run outreach site                      # read-only Outreach Desk snapshot in site/ (live: https://sprinto-outreach-six.vercel.app)
 uv run pytest                             # 88 offline tests (API + headless browser), no keys or network needed
 ```
 

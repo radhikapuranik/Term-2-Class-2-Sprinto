@@ -72,6 +72,7 @@ export async function render_(view, _p, ctx) {
             <button class="btn danger" type="button" data-reject>${icon("x")} Reject <kbd>X</kbd></button>
           </div>
           <div data-reject-box hidden></div>
+          <p class="callout info static-only" style="margin:16px 20px">${icon("lock")}<span>Read-only snapshot: approving, editing and rejecting happen on the laptop.</span></p>
         </article>
         <aside class="side" aria-label="Why this email">
           <section class="card"><div class="person"><span class="avatar">${fmt.initials(who)}</span><div><strong>${who}</strong><div class="muted" style="font-size:13.5px">${c.title || "Title unknown"}</div></div></div>

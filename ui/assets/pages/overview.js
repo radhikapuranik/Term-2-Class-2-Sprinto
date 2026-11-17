@@ -64,6 +64,7 @@ export async function render_(view, _params, ctx) {
     <section class="section grid" id="run" aria-labelledby="run-h">
       <div class="card span-7 run-panel" data-reveal>
         <div><h2 class="h2" id="run-h">Run the agent</h2><p class="muted" style="margin-top:6px">Paste company domains, one per line. Companies already researched come straight from the cache.</p></div>
+        <p class="callout info static-only">${icon("info")}<span>This is a read-only snapshot, so the agent can't run here. On the laptop: <code>python run_ui.py</code>.</span></p>
         <form class="run-panel" data-run-form>
           <div class="field"><label for="domains">Domains</label>
             <textarea id="domains" class="textarea mono" rows="5" placeholder="acme.com&#10;ledgerly.io" spellcheck="false"></textarea></div>

@@ -9,3 +9,5 @@ data/
 .DS_Store
 .vercel
 node_modules/
+site/*
+!site/.gitignore

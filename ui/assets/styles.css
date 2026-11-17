@@ -501,3 +501,11 @@ mark.hl, .hl { background-color: transparent; color: inherit; }
 :root[data-theme="dark"] { --go-ink: var(--go); --nogo-ink: var(--nogo); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --go-ink: var(--go); --nogo-ink: var(--nogo); } }
 .chip.go, .outcome.qualifies { --t: var(--go-ink); } .chip.nogo { --t: var(--nogo-ink); }
+
+/* ---- read-only snapshot (Vercel): no send, run or decide controls ------------------------ */
+.static-only { display: none !important; }
+.static .static-only { display: revert !important; }
+.static p.static-only, .static .callout.static-only { display: flex !important; }
+.static [data-run-form], .static .run-progress, .static [data-stream], .static [data-actions], .static [data-decide],
+.static .kbd-help, .static .check:has([data-dry]) { display: none !important; }
+.static .run-panel { align-content: start; }

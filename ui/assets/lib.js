@@ -1,6 +1,13 @@
 // Shared helpers: data fetching, safe HTML, formatting, icons and small reusable pieces.
 
+const READ_ONLY = "This is a read-only snapshot. Run Outreach Desk on your laptop (python run_ui.py) to do this.";
 export async function api(path, opts = {}) {
+  if (window.OD_STATIC) { // public snapshot: GETs read saved JSON, everything else is refused politely
+    if (opts.method && opts.method !== "GET") throw new Error(READ_ONLY);
+    const res = await fetch(`/data${path.split("?")[0]}.json`);
+    if (!res.ok) throw new Error(res.status === 404 ? "That page isn't in this snapshot." : `Something went wrong (HTTP ${res.status}).`);
+    return res.json();
+  }
   const init = { headers: { "Content-Type": "application/json" }, ...opts };
   if (opts.body && typeof opts.body !== "string") init.body = JSON.stringify(opts.body);
   let res;

@@ -59,7 +59,7 @@ export async function render_(view, [domain], ctx) {
       : c.decision === "HUMAN REVIEW" ? html`<div class="callout review" style="margin-bottom:24px">${icon("eye")}<div><strong>The agent couldn't decide this one safely.</strong> ${c.reasons.filter((r) => /unanswered|neutral/.test(r)).slice(0, 2).join(" · ") || stopReason}</div></div>` : ""}
     ${c.override ? html`<div class="callout info" style="margin-bottom:24px">${icon("info")}<div><strong>Your decision: ${c.override.decision}.</strong> “${c.override.reason}” · ${fmt.ago(c.override.ts)}</div></div>` : ""}
 
-    ${needsCall ? html`<section class="card" style="margin-bottom:24px" data-decide aria-labelledby="decide-h">
+    ${needsCall ? html`<p class="callout review static-only" style="margin-bottom:24px">${icon("eye")}<span>Waiting for a person's GO or NO-GO (made on the laptop, not in this snapshot).</span></p><section class="card" style="margin-bottom:24px" data-decide aria-labelledby="decide-h">
       <h2 class="h3" id="decide-h" style="font-size:16px">Your call</h2>
       <p class="muted" style="font-size:14px;margin:4px 0 12px">Read the evidence below. GO also finds the contact on Hunter (1 search) and writes a draft for review.</p>
       <div class="toolbar" style="margin:0"><label class="field" style="flex:1 1 260px"><span class="sr">Reason</span><input class="input" data-reason placeholder="Why? e.g. Series B and hiring a compliance engineer"></label>
